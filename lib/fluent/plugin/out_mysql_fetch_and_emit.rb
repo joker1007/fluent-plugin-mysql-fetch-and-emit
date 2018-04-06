@@ -61,6 +61,16 @@ module Fluent
       config_param :column_names, :array, value_type: :string, default: ["*"],
         desc: "Select column names."
 
+      config_section :record_matching_key, param_name: :record_matching_keys, required: false, multi: true do
+        config_param :fluentd_record_key, :string
+        config_param :mysql_record_key, :string
+      end
+
+      config_param :renew_record, :bool, default: true,
+        desc: "If this parameter is set to false, it keep original record and modify it."
+      config_param :merge_priority, :enum, list: [:fluentd, :mysql], default: :fluentd,
+        desc: "Preserve data priority. If this is set :mysql, prioritize database record data."
+
       config_section :buffer do
         config_set_default :chunk_limit_records, 1000
       end
@@ -68,15 +78,29 @@ module Fluent
       def configure(conf)
         super
         @accessor_for_record_key = record_accessor_create(@record_key)
+        @accessors_for_record_matching = @record_matching_keys.map { |cf| record_accessor_create(cf.fluentd_record_key) }
+        @column_names_for_record_matching = @record_matching_keys.map { |cf| cf.mysql_record_key }
+
+        unless @renew_record
+          raise ConfigError, "If renew_record is false, record_matching_key has at least one value" if @record_matching_keys.empty?
+        end
       end
 
       def format(tag, time, record)
         value = @accessor_for_record_key.call(record)
+        unless @accessors_for_record_matching.empty?
+          keys_for_origin_record = @accessors_for_record_matching.map { |accessor| accessor.call(record) }
+          if keys_for_origin_record.any?(&:nil?)
+            @log.warn("Incoming record is omitted, because values for record matching include nil", record: record)
+            return nil
+          end
+        end
+
         case value
         when String, Integer, Float
-          [tag, time, {"value" => value}].to_msgpack
+          [tag, time, record].to_msgpack
         else
-          @log.warn("Incoming record is omitted, Supported value type of `record_key` is String, Integer, Float")
+          @log.warn("Incoming record is omitted, Supported value type of `record_key` is String, Integer, Float", record: record)
           nil
         end
       end
@@ -97,13 +121,24 @@ module Fluent
         database, table = expand_placeholders(chunk.metadata)
         @handler = client(database)
         where_values = []
+        origin_records = {}
         chunk.msgpack_each do |tag, time, data|
-          value = data["value"]
+          value = @accessor_for_record_key.call(data)
           case value
           when String
             where_values << "'" + Mysql2::Client.escape(value) + "'" if value
           when Integer, Float
             where_values << value.to_s if value
+          else
+            next
+          end
+
+          unless @accessors_for_record_matching.empty?
+            keys_for_origin_record = @accessors_for_record_matching.map { |accessor| accessor.call(data) }
+            parent = keys_for_origin_record[0..-2].inject(origin_records) do |h, v|
+              h[v] ||= {}
+            end
+            parent[keys_for_origin_record.last] = data
           end
         end
         where_condition = "WHERE #{where_column_name} IN (#{where_values.join(',')})"
@@ -118,6 +153,21 @@ module Fluent
 
         time = Fluent::Clock.now
         results.each do |row|
+          unless @column_names_for_record_matching.empty?
+            record = @column_names_for_record_matching.inject(origin_records) do |h, k|
+              if h
+                h[row[k]]
+              end
+            end
+
+            if record
+              if @merge_priority == :mysql
+                row = record.merge!(row)
+              else
+                row = row.merge!(record)
+              end
+            end
+          end
           router.emit(@tag, time, row)
         end
       end
