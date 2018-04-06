@@ -15,10 +15,10 @@ task default: [:test]
 namespace :circleci do
   namespace :db do
     task :create do
-      client = Mysql2::Client.new(host: "127.0.0.1", username: "root", password: "")
-      client.query("CREATE DATABASE sample")
-      client.query("USE sample")
-      client.query("CREATE TABLE users (id INT NOT NULL AUTO_INCREMENT, name VARCHAR(191), PRIMARY KEY (id)")
+      require "mysql2"
+
+      client = Mysql2::Client.new(host: "127.0.0.1", username: "root", password: "", database: "sample")
+      client.query("CREATE TABLE users (id INT unsigned NOT NULL AUTO_INCREMENT, name VARCHAR(191) NOT NULL, PRIMARY KEY (id))")
     end
   end
 end
