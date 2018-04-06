@@ -56,6 +56,8 @@ module Fluent
         desc: "Use the record value for where condition. (record_accessor format)"
       config_param :where_column, :string, default: nil,
         desc: "Database column name for where condition."
+      config_param :additional_condition, :string, default: nil,
+        desc: "Append this value to where clause."
       config_param :column_names, :array, value_type: :string, default: ["*"],
         desc: "Select column names."
 
@@ -105,6 +107,11 @@ module Fluent
           end
         end
         where_condition = "WHERE #{where_column_name} IN (#{where_values.join(',')})"
+
+        if @additional_condition
+          condition_sql = extract_placeholders(@additional_condition, chunk.metadata)
+          where_condition += " AND #{condition_sql}"
+        end
 
         sql = "SELECT #{@column_names.join(", ")} FROM #{table} #{where_condition}"
         results = @handler.query(sql)
