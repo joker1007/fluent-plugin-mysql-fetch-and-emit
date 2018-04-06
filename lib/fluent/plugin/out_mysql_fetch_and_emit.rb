@@ -68,6 +68,8 @@ module Fluent
 
       config_param :merge_priority, :enum, list: [:fluentd, :mysql], default: :fluentd,
         desc: "Preserve data priority. If this is set :mysql, prioritize database record data."
+      config_param :remove_keys, :array, value_type: :string, default: [],
+        desc: "A list of keys to delete from fluentd record"
 
       config_section :buffer do
         config_set_default :chunk_limit_records, 1000
@@ -155,6 +157,10 @@ module Fluent
             end
 
             if record
+              @remove_keys.each do |k|
+                record.delete(k)
+              end
+
               if @merge_priority == :mysql
                 row = record.merge!(row)
               else
