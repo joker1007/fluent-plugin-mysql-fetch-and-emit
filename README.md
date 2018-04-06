@@ -1,4 +1,5 @@
 # fluent-plugin-mysql-fetch-and-emit
+[![CircleCI](https://circleci.com/gh/joker1007/fluent-plugin-mysql-fetch-and-emit.svg?style=svg)](https://circleci.com/gh/joker1007/fluent-plugin-mysql-fetch-and-emit)
 
 [Fluentd](https://fluentd.org/) output plugin to fetch from mysql by fluentd record and re-emit fetched record.
 

@@ -60,7 +60,6 @@ module Fluent
         desc: "Select column names."
 
       config_section :buffer do
-        config_set_default :@type, "file"
         config_set_default :chunk_limit_records, 1000
       end
 
@@ -112,7 +111,7 @@ module Fluent
 
         time = Fluent::Clock.now
         results.each do |row|
-          router.emit(@tag, time, record)
+          router.emit(@tag, time, row)
         end
       end
 

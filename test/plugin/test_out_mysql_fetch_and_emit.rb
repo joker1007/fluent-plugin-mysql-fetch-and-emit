@@ -19,9 +19,61 @@ class MysqlFetchAndEmitOutputTest < Test::Unit::TestCase
     end
   end
 
+  CONFIG = <<~CONF
+    host 127.0.0.1
+    username root
+    password ""
+    database sample
+    table users
+
+    record_key id
+    column_names ["id as foo", "name"]
+
+    tag new_tag
+  CONF
+
+  test "configure" do
+    driver = create_driver
+
+    assert_equal("id", driver.instance.where_column_name)
+  end
+
+  sub_test_case "write" do
+    test "single feed" do
+      driver = create_driver
+
+      driver.run do
+        driver.feed("tag", Time.now.to_i, {"id" => "1"})
+      end
+      event = driver.events[0]
+      assert_equal("new_tag", event[0])
+      assert_kind_of(Float, event[1])
+      assert_equal({"foo" => 1, "name" => "user1"}, event[2])
+    end
+
+    test "multiple feed" do
+      driver = create_driver
+
+      driver.run do
+        driver.feed("tag", Time.now.to_i, {"id" => "1"})
+        driver.feed("tag", Time.now.to_i, {"id" => "3"})
+      end
+      event1 = driver.events[0]
+      event2 = driver.events[1]
+
+      assert_equal("new_tag", event1[0])
+      assert_kind_of(Float, event1[1])
+      assert_equal({"foo" => 1, "name" => "user1"}, event1[2])
+
+      assert_equal("new_tag", event2[0])
+      assert_kind_of(Float, event2[1])
+      assert_equal({"foo" => 3, "name" => "user3"}, event2[2])
+    end
+  end
+
   private
 
-  def create_driver(conf)
+  def create_driver(conf = CONFIG)
     Fluent::Test::Driver::Output.new(Fluent::Plugin::MysqlFetchAndEmitOutput).configure(conf)
   end
 
