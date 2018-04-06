@@ -90,6 +90,79 @@ class MysqlFetchAndEmitOutputTest < Test::Unit::TestCase
     end
   end
 
+  sub_test_case "renew_record" do
+    test "require unique_key" do
+      assert_raise(Fluent::ConfigError) do
+        create_driver(CONFIG + "\n" + <<~CONF)
+          <buffer tag>
+          </buffer>
+          renew_record false
+        CONF
+      end
+    end
+
+    test "mysql_record.merge(fluentd_record)" do
+      mysql_client.query("INSERT INTO users (id, name) VALUES (4, 'user1')")
+      driver = create_driver(CONFIG + "\n" + <<~CONF)
+        <buffer tag>
+        </buffer>
+        renew_record false
+
+        <record_matching_key>
+          fluentd_record_key id
+          mysql_record_key foo
+        </record_matching_key>
+      CONF
+
+      driver.run do
+        driver.feed("user1", Time.now.to_i, {"id" => 1, "name" => "new_user1", "hoge" => "bar1"})
+        driver.feed("user1", Time.now.to_i, {"id" => 3, "hoge" => "bar3"})
+        driver.feed("user1", Time.now.to_i, {"id" => 4, "name" => "new_user4", "hoge" => "bar4"})
+      end
+      assert_equal(3, driver.events.size)
+      event1 = driver.events[0]
+      event2 = driver.events[1]
+      event3 = driver.events[2]
+
+      assert_equal("new_tag", event1[0])
+      assert_kind_of(Float, event1[1])
+      assert_equal({"id" => 1, "foo" => 1, "name" => "new_user1", "hoge" => "bar1"}, event1[2])
+      assert_equal({"id" => 3, "foo" => 3, "name" => "user3", "hoge" => "bar3"}, event2[2])
+      assert_equal({"id" => 4, "foo" => 4, "name" => "new_user4", "hoge" => "bar4"}, event3[2])
+    end
+
+    test "fluentd_record.merge(mysql_record)" do
+      mysql_client.query("INSERT INTO users (id, name) VALUES (4, 'user1')")
+      driver = create_driver(CONFIG + "\n" + <<~CONF)
+        <buffer tag>
+        </buffer>
+        renew_record false
+        merge_priority mysql
+
+        <record_matching_key>
+          fluentd_record_key id
+          mysql_record_key foo
+        </record_matching_key>
+      CONF
+
+      driver.run do
+        driver.feed("user1", Time.now.to_i, {"id" => 1, "name" => "new_user1", "hoge" => "bar1"})
+        driver.feed("user1", Time.now.to_i, {"id" => 3, "hoge" => "bar3"})
+        driver.feed("user1", Time.now.to_i, {"id" => 4, "name" => "new_user4", "hoge" => "bar4"})
+      end
+      assert_equal(3, driver.events.size)
+      event1 = driver.events[0]
+      event2 = driver.events[1]
+      event3 = driver.events[2]
+
+      assert_equal("new_tag", event1[0])
+      assert_kind_of(Float, event1[1])
+      assert_equal({"id" => 1, "foo" => 1, "name" => "user1", "hoge" => "bar1"}, event1[2])
+      assert_equal({"id" => 3, "foo" => 3, "name" => "user3", "hoge" => "bar3"}, event2[2])
+      assert_equal({"id" => 4, "foo" => 4, "name" => "user1", "hoge" => "bar4"}, event3[2])
+    end
+  end
+
   private
 
   def create_driver(conf = CONFIG)
