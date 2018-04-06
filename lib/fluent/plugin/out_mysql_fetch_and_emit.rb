@@ -66,8 +66,6 @@ module Fluent
         config_param :mysql_record_key, :string
       end
 
-      config_param :renew_record, :bool, default: true,
-        desc: "If this parameter is set to false, it keep original record and modify it."
       config_param :merge_priority, :enum, list: [:fluentd, :mysql], default: :fluentd,
         desc: "Preserve data priority. If this is set :mysql, prioritize database record data."
 
@@ -80,10 +78,6 @@ module Fluent
         @accessor_for_record_key = record_accessor_create(@record_key)
         @accessors_for_record_matching = @record_matching_keys.map { |cf| record_accessor_create(cf.fluentd_record_key) }
         @column_names_for_record_matching = @record_matching_keys.map { |cf| cf.mysql_record_key }
-
-        unless @renew_record
-          raise ConfigError, "If renew_record is false, record_matching_key has at least one value" if @record_matching_keys.empty?
-        end
       end
 
       def format(tag, time, record)

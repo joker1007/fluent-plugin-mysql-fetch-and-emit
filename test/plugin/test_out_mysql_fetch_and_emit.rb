@@ -90,23 +90,12 @@ class MysqlFetchAndEmitOutputTest < Test::Unit::TestCase
     end
   end
 
-  sub_test_case "renew_record" do
-    test "require unique_key" do
-      assert_raise(Fluent::ConfigError) do
-        create_driver(CONFIG + "\n" + <<~CONF)
-          <buffer tag>
-          </buffer>
-          renew_record false
-        CONF
-      end
-    end
-
+  sub_test_case "record_matching_key" do
     test "mysql_record.merge(fluentd_record)" do
       mysql_client.query("INSERT INTO users (id, name) VALUES (4, 'user1')")
       driver = create_driver(CONFIG + "\n" + <<~CONF)
         <buffer tag>
         </buffer>
-        renew_record false
 
         <record_matching_key>
           fluentd_record_key id
@@ -136,7 +125,6 @@ class MysqlFetchAndEmitOutputTest < Test::Unit::TestCase
       driver = create_driver(CONFIG + "\n" + <<~CONF)
         <buffer tag>
         </buffer>
-        renew_record false
         merge_priority mysql
 
         <record_matching_key>
