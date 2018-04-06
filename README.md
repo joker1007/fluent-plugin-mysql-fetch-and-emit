@@ -118,6 +118,10 @@ New tag.
 
 Use the record value for where condition. (record_accessor format)
 
+### additional_condition (string) (optional)
+
+Append this value to where clause.
+
 ### where_column (string) (optional)
 
 Database column name for where condition.

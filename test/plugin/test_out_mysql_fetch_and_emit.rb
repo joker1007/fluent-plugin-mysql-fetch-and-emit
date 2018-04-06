@@ -55,8 +55,8 @@ class MysqlFetchAndEmitOutputTest < Test::Unit::TestCase
       driver = create_driver
 
       driver.run do
-        driver.feed("tag", Time.now.to_i, {"id" => "1"})
-        driver.feed("tag", Time.now.to_i, {"id" => "3"})
+        driver.feed("tag", Time.now.to_i, {"id" => 1})
+        driver.feed("tag", Time.now.to_i, {"id" => 3})
       end
       event1 = driver.events[0]
       event2 = driver.events[1]
@@ -68,6 +68,25 @@ class MysqlFetchAndEmitOutputTest < Test::Unit::TestCase
       assert_equal("new_tag", event2[0])
       assert_kind_of(Float, event2[1])
       assert_equal({"foo" => 3, "name" => "user3"}, event2[2])
+    end
+
+    test "multiple feed with additional_condition" do
+      driver = create_driver(CONFIG + "\n" + <<~CONF)
+        <buffer tag>
+        </buffer>
+        additional_condition "name = '${tag}'"
+      CONF
+
+      driver.run do
+        driver.feed("user1", Time.now.to_i, {"id" => 1})
+        driver.feed("user1", Time.now.to_i, {"id" => 3})
+      end
+      assert_equal(1, driver.events.size)
+      event1 = driver.events[0]
+
+      assert_equal("new_tag", event1[0])
+      assert_kind_of(Float, event1[1])
+      assert_equal({"foo" => 1, "name" => "user1"}, event1[2])
     end
   end
 
