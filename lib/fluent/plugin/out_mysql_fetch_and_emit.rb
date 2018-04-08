@@ -62,8 +62,10 @@ module Fluent
         desc: "Select column names."
 
       config_section :record_matching_key, param_name: :record_matching_keys, required: false, multi: true do
-        config_param :fluentd_record_key, :string
-        config_param :mysql_record_key, :string
+        config_param :fluentd_record_key, :string,
+          desc: "Fluentd record key to identify target to merge with mysql record"
+        config_param :mysql_record_key, :string,
+          desc: "Mysql record column name to identify target to merge with fluentd record"
       end
 
       config_param :merge_priority, :enum, list: [:fluentd, :mysql], default: :fluentd,
