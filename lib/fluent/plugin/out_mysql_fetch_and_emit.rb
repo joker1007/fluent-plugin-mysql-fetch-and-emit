@@ -151,6 +151,7 @@ module Fluent
         end
 
         sql = "SELECT #{@column_names.join(", ")} FROM #{table} #{where_condition}"
+        @log.debug(sql)
         results = @handler.query(sql, cast_booleans: @cast_booleans, stream: @stream)
 
         time = Fluent::Clock.now
@@ -174,6 +175,7 @@ module Fluent
               end
             end
           end
+          @log.debug("emit", tag: @tag, record: row)
           router.emit(@tag, time, row)
         end
       end
