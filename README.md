@@ -140,6 +140,14 @@ SSL cipher.
 
 SSL Verify Server Certificate.
 
+### cast_booleans (bool) (optional)
+
+Tell Mysql2 to cast tinyint(1) fields to boolean values.
+
+### stream (bool) (optional)
+
+Fetch rows from the mysql on demand.
+
 ### table (string) (required)
 
 Database table name.

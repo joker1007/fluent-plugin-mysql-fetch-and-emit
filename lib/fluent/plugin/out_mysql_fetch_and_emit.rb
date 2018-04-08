@@ -45,6 +45,10 @@ module Fluent
         desc: "SSL cipher."
       config_param :sslverify, :bool, default: nil,
         desc: "SSL Verify Server Certificate."
+      config_param :cast_booleans, :bool, default: false,
+        desc: "Tell Mysql2 to cast tinyint(1) fields to boolean values."
+      config_param :stream, :bool, default: false,
+        desc: "Fetch rows from the mysql on demand."
 
       config_param :table, :string,
         desc: "Database table name."
@@ -147,7 +151,7 @@ module Fluent
         end
 
         sql = "SELECT #{@column_names.join(", ")} FROM #{table} #{where_condition}"
-        results = @handler.query(sql)
+        results = @handler.query(sql, cast_booleans: @cast_booleans, stream: @stream)
 
         time = Fluent::Clock.now
         results.each do |row|
