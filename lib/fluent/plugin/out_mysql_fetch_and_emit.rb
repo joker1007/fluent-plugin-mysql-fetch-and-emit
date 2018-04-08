@@ -190,8 +190,7 @@ module Fluent
           sslca: @sslca,
           sslcapath: @sslcapath,
           sslcipher: @sslcipher,
-          sslverify: @sslverify,
-          flags: Mysql2::Client::MULTI_STATEMENTS
+          sslverify: @sslverify
         )
       end
 
