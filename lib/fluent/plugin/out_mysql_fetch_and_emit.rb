@@ -154,7 +154,7 @@ module Fluent
         @log.debug(sql)
         results = @handler.query(sql, cast_booleans: @cast_booleans, stream: @stream)
 
-        time = Fluent::Clock.now
+        time = Fluent::EventTime.now
         results.each do |row|
           unless @column_names_for_record_matching.empty?
             record = @column_names_for_record_matching.inject(origin_records) do |h, k|

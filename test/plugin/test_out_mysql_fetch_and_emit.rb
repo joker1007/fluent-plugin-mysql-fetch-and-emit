@@ -47,7 +47,7 @@ class MysqlFetchAndEmitOutputTest < Test::Unit::TestCase
       end
       event = driver.events[0]
       assert_equal("new_tag", event[0])
-      assert_kind_of(Float, event[1])
+      assert_kind_of(Fluent::EventTime, event[1])
       assert_equal({"foo" => 1, "name" => "user1"}, event[2])
     end
 
@@ -62,11 +62,11 @@ class MysqlFetchAndEmitOutputTest < Test::Unit::TestCase
       event2 = driver.events[1]
 
       assert_equal("new_tag", event1[0])
-      assert_kind_of(Float, event1[1])
+      assert_kind_of(Fluent::EventTime, event1[1])
       assert_equal({"foo" => 1, "name" => "user1"}, event1[2])
 
       assert_equal("new_tag", event2[0])
-      assert_kind_of(Float, event2[1])
+      assert_kind_of(Fluent::EventTime, event2[1])
       assert_equal({"foo" => 3, "name" => "user3"}, event2[2])
     end
 
@@ -85,7 +85,7 @@ class MysqlFetchAndEmitOutputTest < Test::Unit::TestCase
       event1 = driver.events[0]
 
       assert_equal("new_tag", event1[0])
-      assert_kind_of(Float, event1[1])
+      assert_kind_of(Fluent::EventTime, event1[1])
       assert_equal({"foo" => 1, "name" => "user1"}, event1[2])
     end
   end
@@ -114,7 +114,7 @@ class MysqlFetchAndEmitOutputTest < Test::Unit::TestCase
       event3 = driver.events[2]
 
       assert_equal("new_tag", event1[0])
-      assert_kind_of(Float, event1[1])
+      assert_kind_of(Fluent::EventTime, event1[1])
       assert_equal({"id" => 1, "foo" => 1, "name" => "new_user1", "hoge" => "bar1"}, event1[2])
       assert_equal({"id" => 3, "foo" => 3, "name" => "user3", "hoge" => "bar3"}, event2[2])
       assert_equal({"id" => 4, "foo" => 4, "name" => "new_user4", "hoge" => "bar4"}, event3[2])
@@ -145,7 +145,7 @@ class MysqlFetchAndEmitOutputTest < Test::Unit::TestCase
       event3 = driver.events[2]
 
       assert_equal("new_tag", event1[0])
-      assert_kind_of(Float, event1[1])
+      assert_kind_of(Fluent::EventTime, event1[1])
       assert_equal({"id" => 1, "foo" => 1, "name" => "user1"}, event1[2])
       assert_equal({"id" => 3, "foo" => 3, "name" => "user3"}, event2[2])
       assert_equal({"id" => 4, "foo" => 4, "name" => "user1"}, event3[2])
@@ -175,7 +175,7 @@ class MysqlFetchAndEmitOutputTest < Test::Unit::TestCase
       event3 = driver.events[2]
 
       assert_equal("new_tag", event1[0])
-      assert_kind_of(Float, event1[1])
+      assert_kind_of(Fluent::EventTime, event1[1])
       assert_equal({"id" => 1, "foo" => 1, "name" => "user1", "hoge" => "bar1"}, event1[2])
       assert_equal({"id" => 3, "foo" => 3, "name" => "user3", "hoge" => "bar3"}, event2[2])
       assert_equal({"id" => 4, "foo" => 4, "name" => "user1", "hoge" => "bar4"}, event3[2])
@@ -207,7 +207,7 @@ class MysqlFetchAndEmitOutputTest < Test::Unit::TestCase
       event3 = driver.events[2]
 
       assert_equal("new_tag", event1[0])
-      assert_kind_of(Float, event1[1])
+      assert_kind_of(Fluent::EventTime, event1[1])
       assert_equal({"id" => 1, "foo" => 1, "name" => "user1"}, event1[2])
       assert_equal({"id" => 3, "foo" => 3, "name" => "user3"}, event2[2])
       assert_equal({"id" => 4, "foo" => 4, "name" => "user1"}, event3[2])
