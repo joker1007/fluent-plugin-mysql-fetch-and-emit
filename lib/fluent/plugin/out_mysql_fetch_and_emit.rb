@@ -134,14 +134,6 @@ module Fluent
           else
             next
           end
-
-          unless @accessors_for_record_matching.empty?
-            keys_for_origin_record = @accessors_for_record_matching.map { |accessor| accessor.call(data) }
-            parent = keys_for_origin_record[0..-2].inject(origin_records) do |h, v|
-              h[v] ||= {}
-            end
-            parent[keys_for_origin_record.last] = data
-          end
         end
         where_condition = "WHERE #{where_column_name} IN (#{where_values.join(',')})"
 
@@ -153,31 +145,30 @@ module Fluent
         sql = "SELECT #{@column_names.join(", ")} FROM #{table} #{where_condition}"
         @log.debug(sql)
         results = @handler.query(sql, cast_booleans: @cast_booleans, stream: @stream)
+	each_message_mysql_and_emit(chunk, results, origin_records)
+      end
 
-        time = Fluent::EventTime.now
-        results.each do |row|
-          unless @column_names_for_record_matching.empty?
-            record = @column_names_for_record_matching.inject(origin_records) do |h, k|
-              if h
-                h[row[k]]
-              end
-            end
-
-            if record
-              @remove_keys.each do |k|
-                record.delete(k)
-              end
-
-              if @merge_priority == :mysql
-                row = record.merge!(row)
-              else
-                row = row.merge!(record)
-              end
-            end
+      def each_message_mysql_and_emit(chunk, results, origin_records)
+        chunk.msgpack_each do |tag, time, data|
+	  
+	  value = @accessor_for_record_key.call(data)
+	  row = results.find() { |row| row[where_column_name]==value }
+	  final = {}
+	  
+  	  @remove_keys.each do |k|
+            record.delete(k)
           end
-          @log.debug("emit", tag: @tag, record: row)
-          router.emit(@tag, time, row)
-        end
+          
+	  if @merge_priority == :mysql
+            final = data.merge(row)
+          else
+            final = row.merge(data)
+          end
+          
+	  @log.debug("emit", tag: @tag, record: final)
+          router.emit(@tag, time, final)
+
+	end
       end
 
       def client(database)
